@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import MainPage from './components/MainPage.vue';
 </script>
 
 <template>
-  <Button label="Verify" />
+  <MainPage />
 </template>
