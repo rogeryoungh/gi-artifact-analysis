@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
+import { useOcr } from "../uses/useOcr";
 
-const uploadImage = ref(null);
+const { processImage } = useOcr();
+
+const uploadImage = ref<File | null>(null);
 
 const weight = ref({
   attack: 0,
@@ -36,7 +39,7 @@ const charactors = [
   { name: "那维莱特", value: 3 },
 ]
 
-const onSelectPresetCharactor = (event) => {
+const onSelectPresetCharactor = (event: { value: any; }) => {
   const value = event.value;
   if (value.value === 1) {
     weight.value.attack = 0;
@@ -59,18 +62,27 @@ const onSelectPresetCharactor = (event) => {
 
 const entries = computed(() => {
   return Object.keys(weight.value).map((key, idx) => ({
-    key,
+    key: key as keyof typeof weight.value,
     label: labels[idx],
   }))
 })
 
-function onUploadImage(event) {
-  const file = event.files[0];
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    uploadImage.value = e.target.result;
-  };
-  reader.readAsDataURL(file);
+const startAnalysis = () => {
+  if (!uploadImage.value) {
+    alert("请先上传图片");
+    return;
+  }
+  // Perform analysis with the uploaded image and weights
+  console.log("开始分析", uploadImage.value, weight.value);
+
+  processImage(uploadImage.value)
+    .then((res: any) => {
+      console.log("分析结果", res);
+      // Process the result here
+    })
+    .catch((err: any) => {
+      console.error("分析失败", err);
+    });
 }
 
 </script>
@@ -86,14 +98,14 @@ function onUploadImage(event) {
     <div class="flex flex-col lg:flex-row gap-4">
       <Panel header="输入" class="flex-2">
         <div class="flex items-center justify-center h-80">
-          <ImageUploaderButton class="w-full h-full"></ImageUploaderButton>
+          <ImageUploaderButton class="w-full h-full" @update="(t) => uploadImage = t"></ImageUploaderButton>
         </div>
       </Panel>
       <Panel header="参数" class="flex-3">
         <div class="mt-4 grid grid-cols-2 gap-x-8 gap-y-4">
           <div v-for="item in entries" :key="item.key" class="flex items-center space-x-4">
             <label for="param1" class="text-gray-700 w-24"> {{ item.label }}</label>
-            <Slider class="flex-1" v-model="weight[item.key]" />
+            <Slider class="flex-1" v-model="weight[item.key as keyof typeof weight]" />
             <label>{{ (weight[item.key] / 100).toFixed(2) }}</label>
           </div>
         </div>
@@ -113,7 +125,7 @@ function onUploadImage(event) {
             <label for="over_label">毕业分数</label>
           </FloatLabel>
         </div>
-        <Button class="w-full mt-6">开始分析</Button>
+        <Button class="w-full mt-6" @click="startAnalysis">开始分析</Button>
       </Panel>
 
     </div>
