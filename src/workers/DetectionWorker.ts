@@ -2,7 +2,7 @@ import { InferenceSession, Tensor } from 'onnxruntime-web';
 import { dbPostProcess } from '../utils/DBPostprocess';
 
 let detSession: InferenceSession | null = null;
-const DET_MODEL_PATH = '/det.onnx';
+const DET_MODEL_PATH = '/ch_PP-OCRv4_det_infer.onnx';
 const DET_INPUT_SIZE = [3, 640, 640] as const;
 
 self.onmessage = async (e: MessageEvent<{ imageTensor: Float32Array }>) => {

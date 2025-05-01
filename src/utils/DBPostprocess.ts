@@ -20,7 +20,7 @@ export function dbPostProcess(
 	probArray: Float32Array,
 	width: number,
 	height: number,
-	binaryThreshold: number = 0.1,
+	binaryThreshold: number = 0.3,
 	minBoxArea: number = 10,
 	boxExpandRatio: [number, number] = [1.2, 3]
 ): Box[] {
