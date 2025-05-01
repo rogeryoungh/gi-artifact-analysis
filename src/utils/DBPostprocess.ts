@@ -55,6 +55,7 @@ export function dbPostProcess(
 		for (let i = 0; i < contours.size(); ++i) {
 			const contour = contours.get(i);
 			const area = cv.contourArea(contour);
+			const perimeter = cv.arcLength(contour, true); // true for closed contour
 			console.log("contor size", contour.size(), "area", area);
 			// convert to array and log
 			console.log("contour", Array.from(contour.data32S));
@@ -76,7 +77,8 @@ export function dbPostProcess(
 
 				// 7. Expand the box using the provided method, clamping to image boundaries
 				// Use the original map dimensions (width, height) for maxW, maxH in expand
-				box = box.expand(boxExpandRatio[0], boxExpandRatio[1], width, height);
+				// box = box.expand(boxExpandRatio[0], boxExpandRatio[1], width, height);
+				box = box.expandDynamically(area, perimeter, 2, width, height);
 
 
 				// Check if box is valid after expansion (e.g., width/height > 0)
