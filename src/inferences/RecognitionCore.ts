@@ -113,7 +113,7 @@ function preprocess(image: ImageBitmap): Float32Array {
 	const newW = Math.round(newCW * (TARGET_H / ch));
 	const cropCanvas = new OffscreenCanvas(TARGET_W, TARGET_H);
 	const cropCtx = cropCanvas.getContext("2d")!;
-	cropCtx.imageSmoothingEnabled = true;
+	cropCtx.imageSmoothingEnabled = false;
 	cropCtx.fillStyle = shouldInverse ? "#fff" : "#000";
 	cropCtx.fillRect(0, 0, TARGET_W, TARGET_H);
 	cropCtx.drawImage(
