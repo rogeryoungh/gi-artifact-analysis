@@ -97,7 +97,6 @@ function getCropInfo(
 			lastX = x;
 		}
 	}
-	console.log('new X', newX, 'lastX', lastX);
 	x1 += newX;
 	return [x1, y1, x2 - x1 + 1, y2 - y1 + 1];
 }
@@ -136,7 +135,6 @@ function preprocess(image: ImageBitmap): Float32Array {
 	const cropCtx = cropCanvas.getContext("2d")!;
 	cropCtx.imageSmoothingEnabled = false;
 	const bgcolor = Math.floor((shouldInverse ? max : min) * 255);
-	console.log("bgcolor", bgcolor, "min", min, "max", max);
 	cropCtx.fillStyle = `rgb(${bgcolor}, ${bgcolor}, ${bgcolor})`;
 	cropCtx.fillRect(0, 0, TARGET_W, TARGET_H);
 	cropCtx.drawImage(
