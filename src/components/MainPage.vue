@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
+import { pairAttribute } from "../utils/Utils";
 
 const uploadImage = ref<File | null>(null);
 const ocrService = new OcrService();
@@ -66,22 +67,19 @@ const entries = computed(() => {
   }))
 })
 
-const startAnalysis = () => {
+const startAnalysis = async () => {
   if (!uploadImage.value) {
     alert("请先上传图片");
     return;
   }
   // Perform analysis with the uploaded image and weights
-  console.log("开始分析", uploadImage.value, weight.value);
+  console.log("开始分析", weight.value);
 
-  ocrService.detectAndRecognize(uploadImage.value)
-    .then((res: any) => {
-      console.log("分析结果", res);
-      // Process the result here
-    })
-    .catch((err: any) => {
-      console.error("分析失败", err);
-    });
+  const res = await ocrService.detectAndRecognize(uploadImage.value);
+  console.log("分析结果", res);
+
+  const pairedResult = pairAttribute(res);
+  console.log("配对结果", pairedResult);
 }
 
 onMounted(() => {
