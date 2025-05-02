@@ -33,13 +33,14 @@ function toGray(data: ImageData): Float32Array {
 	return gray;
 }
 
-function getNormInfo(arr: Float32Array): { min: number; max: number, shouldInverse: boolean } {
+function getNormInfo(arr: Float32Array, width: number, height: number): { min: number; max: number, shouldInverse: boolean } {
 	let min = Infinity, max = -Infinity;
 	arr.forEach((v) => {
 		if (v < min) min = v;
 		if (v > max) max = v;
 	});
-	const flag = (arr[arr.length - 1] - min) / (max - min);
+	const safePos = Math.max(0, (height - 2) * width + width - 2);
+	const flag = (arr[safePos] - min) / (max - min);
 	const shouldInverse = flag > 0.5;
 	return { min, max, shouldInverse };
 }
@@ -48,7 +49,8 @@ function getCropInfo(
 	arr: Float32Array,
 	w: number,
 	h: number,
-	tolerance: number = 0.7
+	tolerance: number = 0.7,
+	blackSize: number = 0.3
 ): number[] {
 	let minCol = w, maxCol = -1, minRow = h, maxRow = -1;
 	// 找到包含值 > tol 的最小/最大列
@@ -75,9 +77,29 @@ function getCropInfo(
 		return [0, 0, w, h];
 	}
 
-	const cw = maxCol - minCol + 1;
-	const ch = maxRow - minRow + 1;
-	return [minCol, minRow, cw, ch];
+	let [x1, y1, x2, y2] = [minCol, minRow, maxCol, maxRow];
+	let [cw, ch] = [x2 - x1 + 1, y2 - y1 + 1];
+
+	let lastX = 0;
+	let newX = 0;
+	for (let x = 0; x <= Math.min(ch * 2, cw); x++) {
+		let sum = 0;
+		for (let y = y1; y <= y2; y++) {
+			if (arr[y * w + x + x1] > tolerance) {
+				sum += 1;
+			}
+		}
+		if (sum / ch < 0.001) {
+			if (x - lastX > blackSize * ch) {
+				newX = x;
+			}
+		} else {
+			lastX = x;
+		}
+	}
+	console.log('new X', newX, 'lastX', lastX);
+	x1 += newX;
+	return [x1, y1, x2 - x1 + 1, y2 - y1 + 1];
 }
 
 function preprocess(image: ImageBitmap): Float32Array {
@@ -91,7 +113,7 @@ function preprocess(image: ImageBitmap): Float32Array {
 	const grayData = toGray(imageData);
 
 	// 2. 标准化
-	const { min, max, shouldInverse } = getNormInfo(grayData);
+	const { min, max, shouldInverse } = getNormInfo(grayData, width, height);
 	const normData = grayData.map((v) => {
 		let normalized = (v - min) / (max - min);
 		if (shouldInverse) normalized = 1 - normalized;
@@ -113,7 +135,9 @@ function preprocess(image: ImageBitmap): Float32Array {
 	const cropCanvas = new OffscreenCanvas(TARGET_W, TARGET_H);
 	const cropCtx = cropCanvas.getContext("2d")!;
 	cropCtx.imageSmoothingEnabled = false;
-	cropCtx.fillStyle = shouldInverse ? "#fff" : "#000";
+	const bgcolor = Math.floor((shouldInverse ? max : min) * 255);
+	console.log("bgcolor", bgcolor, "min", min, "max", max);
+	cropCtx.fillStyle = `rgb(${bgcolor}, ${bgcolor}, ${bgcolor})`;
 	cropCtx.fillRect(0, 0, TARGET_W, TARGET_H);
 	cropCtx.drawImage(
 		canvas,
@@ -128,7 +152,7 @@ function preprocess(image: ImageBitmap): Float32Array {
 	const grayCrop = toGray(grayCropData);
 
 	// 6. 标准化并二值化
-	const { min: cropMin, max: cropMax } = getNormInfo(grayCrop);
+	const { min: cropMin, max: cropMax } = getNormInfo(grayCrop, width, height);
 	const normCrop = grayCrop.map((v) => {
 		let normalized = (v - cropMin) / (cropMax - cropMin);
 		if (shouldInverse) normalized = 1 - normalized;
