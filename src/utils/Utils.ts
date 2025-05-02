@@ -38,7 +38,9 @@ export function pairAttribute(data: OcrResult[], threshold: number = 0.8): strin
 				const overlapRate = checkVerticalOverlapRate(current.box, next.box);
 				if (overlapRate > threshold) {
 					paired[j] = true;
-					results.push([current.text, next.text]);
+					if (current.text !== "" && next.text !== "") {
+						results.push([current.text, next.text]);
+					}
 					break;
 				}
 			}
