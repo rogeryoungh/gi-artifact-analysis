@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
-import { useOcr } from "../uses/useOcr";
-
-const { processImage } = useOcr();
+import { OcrService } from "../services/OcrService";
 
 const uploadImage = ref<File | null>(null);
+const ocrService = new OcrService();
 
 const weight = ref({
   attack: 0,
@@ -75,7 +74,7 @@ const startAnalysis = () => {
   // Perform analysis with the uploaded image and weights
   console.log("开始分析", uploadImage.value, weight.value);
 
-  processImage(uploadImage.value)
+  ocrService.detectAndRecognize(uploadImage.value)
     .then((res: any) => {
       console.log("分析结果", res);
       // Process the result here
@@ -84,6 +83,12 @@ const startAnalysis = () => {
       console.error("分析失败", err);
     });
 }
+
+onMounted(() => {
+  setTimeout(() => {
+    ocrService.init();
+  }, 300);
+});
 
 </script>
 

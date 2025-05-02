@@ -1,7 +1,7 @@
 import { Box } from '../utils/Box';
-// Import necessary functions from CanvasUtils (or your PreprocessingUtils)
-import * as CanvasUtils from '../utils/CanvasUtils';
-import { AsyncWorker } from '../utils/AsyncWorker';
+import { DetectionAsync } from '../inferences/DetectionWarpper';
+import { RecognitionAsync } from '../inferences/RecognitionWarpper';
+import { saveOffscreenCanvas } from '../utils/CanvasUtils';
 
 export interface OcrResult {
 	box: Box;
@@ -9,97 +9,52 @@ export interface OcrResult {
 }
 
 export class OcrService {
-	private detWorker: AsyncWorker<{ imageTensor: Float32Array }, { boxes: Box[] }>;
-	private recWorker: AsyncWorker<
-		{ inputData: Float32Array; indexToWord: string[] },
-		{ text: string }
-	>;
+	private detWorker: DetectionAsync;
+	private recWorker: RecognitionAsync;
 
-	constructor(private indexToWord: string[]) {
-		// Initialize workers (assuming URLs are correct)
-		this.detWorker = new AsyncWorker(
-			new URL('../workers/DetectionWorker.ts', import.meta.url),
-			{ type: 'module' }
-		);
-		this.recWorker = new AsyncWorker(
-			new URL('../workers/RecognitionWorker.ts', import.meta.url),
-			{ type: 'module' }
-		);
+	constructor() {
+		this.detWorker = new DetectionAsync();
+		this.recWorker = new RecognitionAsync();
+	}
+
+	async init() {
+		await this.detWorker.init();
+		await this.recWorker.init();
 	}
 
 
-
 	async detectAndRecognize(file: File): Promise<OcrResult[]> {
-		const canvas = await CanvasUtils.loadImageToCanvas(file);
-		// this.saveCanvasToFile(canvas, 'original.png');
+		// 1. 获得图片
+		const image = await createImageBitmap(file);
+		console.log("1. Image preprocessed for detection");
 
-		// 1. Prepare image tensor for DETECTION model (e.g., 640x640)
-		// This likely involves resizing the whole image and normalizing differently
-		// than the recognition preprocessing. Keep this step as needed for detection.
-		const detectionInputTensor = CanvasUtils.getImageTensor(canvas, 640, 640); // Assuming this remains necessary
-
-		// 盒子放大系数
-		const BOX_RESIZE = Math.max(canvas.width, canvas.height) / 640;
-
-
-		// 2. Run Detection
-		const { boxes } = await this.detWorker.run({ imageTensor: detectionInputTensor });
-
-		console.log('Detected boxes:', boxes);
+		// 2. 文本检测
+		const boxes = await this.detWorker.detect(image);
+		console.log("2. Detection completed, boxes detected:", boxes);
 
 		const results: OcrResult[] = [];
 
 		// 3. Process each detected box for RECOGNITION
 		for (const box of boxes) {
-			console.log('Processing box:', box);
-			// Expand the box slightly
-			const boxObj = new Box(
-				box.x1 * BOX_RESIZE,
-				box.y1 * BOX_RESIZE,
-				box.x2 * BOX_RESIZE,
-				box.y2 * BOX_RESIZE
-			);
+			// 3.1 裁剪图片
+			const boxObj = new Box(box[0], box[1], box[2], box[3]);
+			const cropCanvas = new OffscreenCanvas(boxObj.x2 - boxObj.x1, boxObj.y2 - boxObj.y1);
+			const ctx = cropCanvas.getContext('2d')!;
+			ctx.drawImage(image, boxObj.x1, boxObj.y1, boxObj.x2 - boxObj.x1, boxObj.y2 - boxObj.y1, 0, 0, boxObj.x2 - boxObj.x1, boxObj.y2 - boxObj.y1);
+			console.log("3.1 Cropped image from original image, box:", boxObj);
 
-			// Crop the original canvas using the expanded box
-			const cropCanvas = CanvasUtils.cropCanvasRegion(canvas, boxObj);
-			console.log('Processing box:', box);
+			// 3.2 处理裁剪后的图片
+			const cropImage = cropCanvas.transferToImageBitmap();
+			const text = await this.recWorker.recognition(cropImage);
+			console.log("3.2 Recognition completed, text detected:", text);
 
-			CanvasUtils.saveCanvasToFile(cropCanvas, `crop_${boxObj.x1}_${boxObj.y1}.png`);
-			// alert(`Cropped image saved as crop_${boxObj.x1}_${boxObj.y1}.png`);
-
-			// --- PREPROCESSING FOR RECOGNITION MODEL ---
-			// Replace the old CanvasUtils.getCropTensor call
-			// Use the detailed preprocessing function we defined
-			// This performs: gray->norm(inv)->crop->norm->resize/pad->binarize
-			// IMPORTANT: This step runs in the main thread because resizeAndPad uses DOM elements.
-			let recognitionInputTensor: Float32Array;
-			try {
-				recognitionInputTensor = CanvasUtils.preprocessForRecognition(cropCanvas); // Using default threshold 0.6
-			} catch (error) {
-				console.error("Error during preprocessing for recognition:", error, "Box:", boxObj);
-				// Skip this box or handle error appropriately
-				continue;
-			}
-			// --- END PREPROCESSING ---
-
-
-			// 4. Run Recognition on the preprocessed tensor
-			try {
-				// Send the specifically preprocessed tensor (384x32) to the worker
-				const { text } = await this.recWorker.run({
-					inputData: recognitionInputTensor, // Use the preprocessed data
-					indexToWord: this.indexToWord,
-				});
-				results.push({ box: boxObj, text }); // Store result with the expanded box
-				console.log('Recognition result:', text);
-			} catch (recError) {
-				console.error("Error during recognition worker execution:", recError, "Box:", boxObj);
-				// Skip this box or handle error appropriately
-				continue;
-			}
-
+			results.push({
+				box: boxObj,
+				text: text,
+			});
 		} // End loop through boxes
 
+		console.log("6. All boxes processed, results:", results);
 		return results;
 	}
 }

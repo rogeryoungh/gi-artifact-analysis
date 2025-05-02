@@ -22,7 +22,6 @@ export function dbPostProcess(
 	height: number,
 	binaryThreshold: number = 0.3,
 	minBoxArea: number = 10,
-	boxExpandRatio: [number, number] = [1.2, 3]
 ): Box[] {
 	let src: cv.Mat | null = null;
 	let binaryMat: cv.Mat | null = null;
@@ -56,16 +55,16 @@ export function dbPostProcess(
 			const contour = contours.get(i);
 			const area = cv.contourArea(contour);
 			const perimeter = cv.arcLength(contour, true); // true for closed contour
-			console.log("contor size", contour.size(), "area", area);
+			// console.log("contor size", contour.size(), "area", area);
 			// convert to array and log
-			console.log("contour", Array.from(contour.data32S));
+			// console.log("contour", Array.from(contour.data32S));
 
 			// Filter by minimum area
 			if (area >= minBoxArea) {
 				// 5. Get axis-aligned bounding rectangle
 				const rect = cv.boundingRect(contour);
 
-				console.log("contours", rect);
+				// console.log("contours", rect);
 
 				// 6. Create Box object (adjusting for x2, y2)
 				const x1 = rect.x;
