@@ -8,9 +8,8 @@ export class AsyncWorker {
     { resolve: (value: any) => void; reject: (err: any) => void }
   >();
 
-  constructor(scriptUrl: string) {
-    // type='module' 可以让 Worker 支持 import
-    this.worker = new Worker(new URL(scriptUrl, import.meta.url), { type: 'module' });
+  constructor(worker: Worker) {
+    this.worker = worker;
     this.worker.onmessage = this.onMessage.bind(this);
   }
 

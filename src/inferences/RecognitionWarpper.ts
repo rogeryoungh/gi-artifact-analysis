@@ -1,12 +1,11 @@
 import { AsyncWorker } from "../workers/AsyncWorker";
-import { recognition, initModel, initWordIndex } from "./RecognitionCore";
-import type { InferenceSession } from "onnxruntime-web";
+import MyRecWorker from "../workers/RecognitionWorker?worker";
 
 export class RecognitionWorker {
 	private worker: AsyncWorker;
 
 	constructor() {
-		this.worker = new AsyncWorker("../workers/RecognitionWorker.ts");
+		this.worker = new AsyncWorker(new MyRecWorker());
 	}
 
 	async init() {
@@ -19,21 +18,5 @@ export class RecognitionWorker {
 
 	terminate() {
 		this.worker.terminate();
-	}
-}
-
-export class RecognitionAsync {
-	private model: InferenceSession | null = null;
-	private wordIndex: string[] | null = null;
-
-
-	async init() {
-		this.model = await initModel();
-		this.wordIndex = await initWordIndex();
-	}
-
-	async recognition(image: ImageBitmap): Promise<string> {
-		const boxes = await recognition(this.model!, this.wordIndex!, image);
-		return boxes;
 	}
 }

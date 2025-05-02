@@ -1,12 +1,11 @@
 import { AsyncWorker } from "../workers/AsyncWorker";
-import { detection, initModel } from "./DetectionCore";
-import type { InferenceSession } from "onnxruntime-web";
+import MyDetWorker from "../workers/DetectionWorker?worker";
 
 export class DetectionWorker {
 	private worker: AsyncWorker;
 
 	constructor() {
-		this.worker = new AsyncWorker("../workers/DetectionWorker.ts");
+		this.worker = new AsyncWorker(new MyDetWorker());
 	}
 
 	async init() {
@@ -19,18 +18,5 @@ export class DetectionWorker {
 
 	terminate() {
 		this.worker.terminate();
-	}
-}
-
-export class DetectionAsync {
-	private model: InferenceSession | null = null;
-
-	async init() {
-		this.model = await initModel();
-	}
-
-	async detect(image: ImageBitmap): Promise<number[][]> {
-		const boxes = await detection(this.model!, image);
-		return boxes;
 	}
 }
