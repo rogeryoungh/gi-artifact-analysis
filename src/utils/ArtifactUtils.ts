@@ -121,3 +121,70 @@ export function equipmentToArray(equipment: EquipmentAttrs): number[] {
 	}
 	return arr;
 }
+
+export function calculateScore(lv: number, targetLv: number, arr: number[], weights: number[]): number[] {
+	const P_LIST = [0.7, 0.8, 0.9, 1.0];
+
+	const results: number[] = [];
+
+	const nextLv = (curLv: number) => {
+		const next = curLv + 4;
+		return next - (next % 4);
+	}
+
+	const dfs4 = (weight4: number[]) => {
+		const _dfs = (curLv: number, curScore: number) => {
+			if (curLv >= targetLv) {
+				results.push(curScore);
+				return;
+			}
+			for (const w of weight4) {
+				for (const p of P_LIST) {
+					const nextScore = curScore + p * w;
+					_dfs(nextLv(curLv), nextScore);
+				}
+			}
+		}
+		return _dfs;
+	}
+
+	const getScore = (curArr: number[]) => {
+		let sum = 0;
+		for (let i = 0; i < curArr.length; i++) {
+			if (curArr[i] > 0) {
+				sum += curArr[i] * weights[i];
+			}
+		}
+		return sum;
+	};
+
+	const dfs = (curLv: number, curArr: number[]) => {
+		const activeArr: number[] = [];
+		const inactiveArr: number[] = [];
+		for (let i = 0; i < curArr.length; i++) {
+			if (curArr[i] > 0) {
+				activeArr.push(i);
+			} else {
+				inactiveArr.push(i);
+			}
+		}
+		if (activeArr.length === 4) {
+			const weight4 = activeArr.map(i => weights[i]);
+			const _dfs = dfs4(weight4);
+			_dfs(curLv, getScore(curArr));
+		} else if (activeArr.length < 4) {
+			for (const i of inactiveArr) {
+				for (const p of P_LIST) {
+					const nextArr = [...curArr];
+					nextArr[i] += p;
+					dfs(nextLv(curLv), nextArr);
+				}
+			}
+		} else {
+			throw new Error("属性数量超过 4 个，无法计算评分。");
+		}
+	};
+
+	dfs(lv, arr);
+	return results;
+}

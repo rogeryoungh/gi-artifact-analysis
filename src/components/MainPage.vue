@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
-import { AttrKey, AttrName, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
+import { AttrKey, AttrName, calculateScore, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
 
 const uploadImage = ref<File | null>(null);
 const ocrService = new OcrService();
@@ -17,23 +17,26 @@ const charactors = [
 ]
 
 const onSelectPresetCharactor = (event: { value: any; }) => {
-  const value = event.value;
-  if (value.value === 1) {
-    weight.value.fill(0);
-    weight.value[AttrKey.ATK_PERCENT] = 100;
-    weight.value[AttrKey.CRIT_RATE] = 100;
-    weight.value[AttrKey.CRIT_DMG] = 100;
-    console.log(value);
-  } else if (event.value === 2) {
-    weight.value[AttrKey.ATK_PERCENT] = 100;
-    weight.value[AttrKey.CRIT_RATE] = 100;
-    weight.value[AttrKey.CRIT_DMG] = 100;
-    weight.value[AttrKey.ELEMENTAL_MASTERY] = 100;
-  } else if (event.value === 3) {
-    weight.value[AttrKey.HP_PERCENT] = 100;
-    weight.value[AttrKey.CRIT_RATE] = 100;
-    weight.value[AttrKey.CRIT_DMG] = 100;
-    weight.value[AttrKey.ENERGY_RECHARGE] = 15;
+  console.log(event.value);
+  weight.value.fill(0);
+  switch (event.value.value) {
+    case 1:
+      weight.value[AttrKey.ATK_PERCENT] = 100;
+      weight.value[AttrKey.CRIT_RATE] = 100;
+      weight.value[AttrKey.CRIT_DMG] = 100;
+      break;
+    case 2:
+      weight.value[AttrKey.ATK_PERCENT] = 100;
+      weight.value[AttrKey.CRIT_RATE] = 100;
+      weight.value[AttrKey.CRIT_DMG] = 100;
+      weight.value[AttrKey.ELEMENTAL_MASTERY] = 100;
+      break;
+    case 3:
+      weight.value[AttrKey.HP_PERCENT] = 100;
+      weight.value[AttrKey.CRIT_RATE] = 100;
+      weight.value[AttrKey.CRIT_DMG] = 100;
+      weight.value[AttrKey.ENERGY_RECHARGE] = 15;
+      break;
   }
 }
 
@@ -50,8 +53,9 @@ const startAnalysis = async () => {
     alert("请先上传图片");
     return;
   }
+  const weights = Array.from(weight.value).map((e) => e / 100);
   // Perform analysis with the uploaded image and weights
-  console.log("开始分析", weight.value);
+  console.log("开始分析", weights);
 
   const res = await ocrService.detectAndRecognize(uploadImage.value);
   console.log("OCR 结果", res);
@@ -61,6 +65,15 @@ const startAnalysis = async () => {
   const resultArr = equipmentToArray(parsedResult);
   console.log("配对结果", parsedResult);
   console.log("配对结果", resultArr);
+
+  const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights);
+  let maxScore = 0;
+  scores.forEach((score) => {
+    if (score > maxScore) {
+      maxScore = score;
+    }
+  });
+  console.log("最大分数", maxScore, "分数", scores,);
 }
 
 onMounted(() => {
@@ -89,7 +102,7 @@ onMounted(() => {
         <div class="mt-4 grid grid-cols-2 gap-x-8 gap-y-4">
           <div v-for="item in entries" :key="item.key" class="flex items-center space-x-4">
             <label for="param1" class="text-gray-700 w-24"> {{ item.label }}</label>
-            <Slider class="flex-1" v-model="weight[item.key as keyof typeof weight]" />
+            <Slider class="flex-1" v-model="weight[item.key]" />
             <label>{{ (weight[item.key] / 100).toFixed(2) }}</label>
           </div>
         </div>
