@@ -188,3 +188,23 @@ export function calculateScore(lv: number, targetLv: number, arr: number[], weig
 	dfs(lv, arr);
 	return results;
 }
+
+export function calcPDF(data: number[], binSize: number): { labels: string[], PDF: number[], CCDF: number[] } {
+	const max = data.reduce((acc, val) => (val > acc ? val : acc), -Infinity);
+	const min = data.reduce((acc, val) => (val < acc ? val : acc), Infinity);
+	const xs = new Array(Math.ceil((max - min) / binSize) + 1).fill(0).map((_, i) => min + i * binSize);
+	const labels = xs.map((x) => x.toFixed(-Math.log10(binSize)));
+	const binCount = Math.ceil((max - min) / binSize) + 1;
+	const bins = new Array(binCount).fill(0);
+	for (const d of data) {
+		const index = Math.floor((d - min) / binSize);
+		bins[index]++;
+	}
+	const acc = [...bins];
+	for (let i = acc.length - 1; i > 0; i--) {
+		acc[i - 1] += acc[i];
+	}
+	const n = data.length;
+
+	return { labels, PDF: bins.map((v) => v / n), CCDF: acc.map((v) => v / n) };
+}

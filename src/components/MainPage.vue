@@ -3,7 +3,8 @@ import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
-import { AttrKey, AttrName, calculateScore, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
+import { AttrKey, AttrName, calcPDF, calculateScore, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
+import type { ChartData } from "chart.js";
 
 const uploadImage = ref<File | null>(null);
 const ocrService = new OcrService();
@@ -14,7 +15,67 @@ const charactors = [
   { name: "攻击力基础模型", value: 1 },
   { name: "刻晴", value: 2 },
   { name: "那维莱特", value: 3 },
-]
+];
+
+const chartReady = ref(false);
+const chartData = ref<ChartData>({
+  labels: [],
+  datasets: [
+    {
+      label: "概率密度",
+      data: [],
+      yAxisID: 'y',
+      borderColor: "#4CAF50",
+      backgroundColor: "#4CAF50",
+      fill: false,
+      tension: 0.4
+    },
+    {
+      label: "累计概率",
+      data: [],
+      yAxisID: 'y1',
+      borderColor: "#FF9800",
+      backgroundColor: "#FF9800",
+      fill: false,
+      tension: 0.4
+    },
+  ],
+});
+
+const chartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      display: true,
+      position: "top",
+    },
+  },
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: "词条分",
+      },
+    },
+    y: {
+      position: 'right',
+      title: {
+        display: true,
+        text: "概率密度",
+      },
+      grid: {
+        drawOnChartArea: false,
+      },
+    },
+    y1: {
+      position: 'left',
+      title: {
+        display: true,
+        text: "累计概率",
+      },
+    },
+  },
+};
 
 const onSelectPresetCharactor = (event: { value: any; }) => {
   console.log(event.value);
@@ -66,14 +127,12 @@ const startAnalysis = async () => {
   console.log("配对结果", parsedResult);
   console.log("配对结果", resultArr);
 
-  const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights);
-  let maxScore = 0;
-  scores.forEach((score) => {
-    if (score > maxScore) {
-      maxScore = score;
-    }
-  });
-  console.log("最大分数", maxScore, "分数", scores,);
+  const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
+  const { labels, PDF, CCDF } = calcPDF(scores, 1);
+  chartReady.value = true;
+  chartData.value.labels = labels;
+  chartData.value.datasets[0].data = PDF;
+  chartData.value.datasets[1].data = CCDF;
 }
 
 onMounted(() => {
@@ -129,7 +188,8 @@ onMounted(() => {
 
     <Panel header="结果" class="mt-4 min-h-30">
       让我们看看是哪个旅行者，又出了极品圣遗物呢 ✨
-      <Skeleton class="w-full mt-4" height="30px" />
+      <Chart v-if="chartReady" type="line" :data="chartData" :options="chartOptions" />
+      <Skeleton v-else class="w-full mt-4" height="30px" />
     </Panel>
 
   </div>
