@@ -40,6 +40,7 @@ interface EquipmentAttrs {
 	level: number | null;       // 装备等级，未识别到则为 null
 	mainAttr: ParsedAttr | null;// 主属性（有等级时，等级上一条；否则 null）
 	subAttrs: ParsedAttr[];     // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
+	info: string;               // 识别到的属性信息
 }
 
 function parseSingle([label, val]: [string, string]): ParsedAttr {
@@ -105,10 +106,23 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 			subRaws = allAttrs;
 		}
 	}
+	const info = [];
+	info.push(level ? `等级 ${level}` : "等级未知");
+	if (mainRaw) {
+		info.push(`主属性 ${mainRaw[0]} ${mainRaw[1]}`);
+	}
+	if (subRaws.length > 0) {
+		subRaws.forEach(([label, val]) => {
+			info.push(`${label} ${val}`);
+		});
+	} else {
+		info.push("无副属性");
+	}
 	return {
 		level,
 		mainAttr: mainRaw ? parseSingle(mainRaw) : null,
-		subAttrs: subRaws.map(parseSingle)
+		subAttrs: subRaws.map(parseSingle),
+		info: info.join("，")
 	};
 }
 

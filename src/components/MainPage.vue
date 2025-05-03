@@ -5,19 +5,34 @@ import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
 import { AttrKey, AttrName, calcPDF, calculateScore, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
 import type { ChartData } from "chart.js";
+import { useToast } from "primevue";
+
+const toast = useToast();
 
 const uploadImage = ref<File | null>(null);
 const ocrService = new OcrService();
 
-const weight = ref(Array(10).fill(0));
+const weight = ref([0, 0, 0, 0, 0, 0, 100, 100, 0, 0]);
+
+const infoRef = ref({
+  current: 25,
+  target: 45,
+  currentProbability: 0,
+  targetProbability: 0,
+  artifactInfo: ""
+});
 
 const charactors = [
-  { name: "攻击力基础模型", value: 1 },
+  { name: "攻击力模型", value: 1 },
   { name: "刻晴", value: 2 },
   { name: "那维莱特", value: 3 },
 ];
 
-const chartReady = ref(false);
+const show = ref({
+  chart: false,
+  chartSkeleton: false,
+});
+
 const chartData = ref<ChartData>({
   labels: [],
   datasets: [
@@ -111,11 +126,28 @@ const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 const startAnalysis = async () => {
   if (!uploadImage.value) {
-    alert("请先上传图片");
+    toast.add({
+      severity: "error",
+      summary: "错误",
+      detail: "请先上传图片",
+      life: 3000,
+    });
     return;
   }
+  show.value.chart = false;
+  show.value.chartSkeleton = true;
+
   const weights = Array.from(weight.value).map((e) => e / 100);
-  // Perform analysis with the uploaded image and weights
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  console.log("权重", totalWeight);
+  if (totalWeight < 0.1) {
+    toast.add({
+      severity: "warn",
+      summary: "错误",
+      detail: "您的权重似乎设置的非常小，建议再检查一下",
+      life: 3000,
+    });
+  }
   console.log("开始分析", weights);
 
   const res = await ocrService.detectAndRecognize(uploadImage.value);
@@ -126,13 +158,22 @@ const startAnalysis = async () => {
   const resultArr = equipmentToArray(parsedResult);
   console.log("配对结果", parsedResult);
   console.log("配对结果", resultArr);
+  infoRef.value.artifactInfo = parsedResult.info;
 
   const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
+  const currentScore = infoRef.value.current;
+  const targetScore = infoRef.value.target;
+
+  infoRef.value.currentProbability = scores.filter(x => x >= currentScore).length / scores.length;
+  infoRef.value.targetProbability = scores.filter(x => x >= targetScore).length / scores.length;
+
   const { labels, PDF, CCDF } = calcPDF(scores, 1);
-  chartReady.value = true;
   chartData.value.labels = labels;
   chartData.value.datasets[0].data = PDF;
   chartData.value.datasets[1].data = CCDF;
+
+  show.value.chart = true;
+  show.value.chartSkeleton = false;
 }
 
 onMounted(() => {
@@ -149,8 +190,8 @@ onMounted(() => {
       <div class="text-xl font-bold">圣遗物分析仪</div>
     </div>
   </header>
-  <div class="container mx-auto px-4 lg:px-20 my-10">
-
+  <main class="container mx-auto px-4 lg:px-20 my-10">
+    <Toast />
     <div class="flex flex-col lg:flex-row gap-4">
       <Panel header="输入" class="flex-2">
         <div class="flex items-center justify-center h-80">
@@ -173,11 +214,11 @@ onMounted(() => {
           </FloatLabel>
 
           <FloatLabel>
-            <InputNumber inputId="over_label" />
+            <InputNumber inputId="over_label" v-model="infoRef.current" />
             <label for="over_label">当前分数</label>
           </FloatLabel>
           <FloatLabel>
-            <InputNumber inputId="over_label" />
+            <InputNumber inputId="over_label" v-model="infoRef.target" />
             <label for="over_label">毕业分数</label>
           </FloatLabel>
         </div>
@@ -187,12 +228,16 @@ onMounted(() => {
     </div>
 
     <Panel header="结果" class="mt-4 min-h-30">
-      让我们看看是哪个旅行者，又出了极品圣遗物呢 ✨
-      <Chart v-if="chartReady" type="line" :data="chartData" :options="chartOptions" />
-      <Skeleton v-else class="w-full mt-4" height="30px" />
+      <p class="py-2">让我们看看是哪个旅行者，又出了极品圣遗物呢 ✨</p>
+      <div v-if="show.chart">
+        <p class="py-2">识别结果：{{ infoRef.artifactInfo }}。</p>
+        <p class="py-2">超过当前分数的概率：{{ (infoRef.currentProbability * 100).toFixed(2) }}%，达到毕业分数的概率：{{ (infoRef.targetProbability * 100).toFixed(2) }}%。</p>
+      </div>
+      <Chart v-if="show.chart" type="line" :data="chartData" :options="chartOptions" />
+      <Skeleton v-if="show.chartSkeleton" class="h-80" />
     </Panel>
 
-  </div>
+  </main>
   <footer class="mt-8">
     <div class="container mx-auto px-4 py-4 text-center text-sm text-gray-500">
       © 2025 rogeryoungh
