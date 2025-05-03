@@ -1,37 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
+import { AttrKey, AttrName, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
 
 const uploadImage = ref<File | null>(null);
 const ocrService = new OcrService();
 
-const weight = ref({
-  attack: 0,
-  attackPercent: 0,
-  hp: 0,
-  hpPercent: 0,
-  defense: 0,
-  defensePercent: 0,
-  critRate: 0,
-  critDamage: 0,
-  mastery: 0,
-  rechargeEfficiency: 0,
-})
-
-const labels = [
-  '攻击力',
-  '攻击力%',
-  '生命值',
-  '生命值%',
-  '防御力',
-  '防御力%',
-  '暴击率',
-  '暴击伤害',
-  '元素精通',
-  '充能效率',
-]
+const weight = ref(Array(10).fill(0));
 
 const charactors = [
   { name: "攻击力基础模型", value: 1 },
@@ -42,30 +19,31 @@ const charactors = [
 const onSelectPresetCharactor = (event: { value: any; }) => {
   const value = event.value;
   if (value.value === 1) {
-    weight.value.attack = 0;
-    weight.value.attackPercent = 100;
-    weight.value.hp = 0;
-    weight.value.hpPercent = 0;
-    weight.value.defense = 0;
-    weight.value.defensePercent = 0;
-    weight.value.critRate = 100;
-    weight.value.critDamage = 100;
-    weight.value.mastery = 0;
-    weight.value.rechargeEfficiency = 0;
+    weight.value.fill(0);
+    weight.value[AttrKey.ATK_PERCENT] = 100;
+    weight.value[AttrKey.CRIT_RATE] = 100;
+    weight.value[AttrKey.CRIT_DMG] = 100;
     console.log(value);
   } else if (event.value === 2) {
-    // Set weights for 刻晴
+    weight.value[AttrKey.ATK_PERCENT] = 100;
+    weight.value[AttrKey.CRIT_RATE] = 100;
+    weight.value[AttrKey.CRIT_DMG] = 100;
+    weight.value[AttrKey.ELEMENTAL_MASTERY] = 100;
   } else if (event.value === 3) {
-    // Set weights for 那维莱特
+    weight.value[AttrKey.HP_PERCENT] = 100;
+    weight.value[AttrKey.CRIT_RATE] = 100;
+    weight.value[AttrKey.CRIT_DMG] = 100;
+    weight.value[AttrKey.ENERGY_RECHARGE] = 15;
   }
 }
 
-const entries = computed(() => {
-  return Object.keys(weight.value).map((key, idx) => ({
-    key: key as keyof typeof weight.value,
-    label: labels[idx],
-  }))
-})
+const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  .map((e) => {
+    return {
+      key: e,
+      label: AttrName[e],
+    }
+  });
 
 const startAnalysis = async () => {
   if (!uploadImage.value) {
@@ -76,10 +54,13 @@ const startAnalysis = async () => {
   console.log("开始分析", weight.value);
 
   const res = await ocrService.detectAndRecognize(uploadImage.value);
-  console.log("分析结果", res);
+  console.log("OCR 结果", res);
 
   const pairedResult = pairAttribute(res);
-  console.log("配对结果", pairedResult);
+  const parsedResult = parseEquipment(pairedResult);
+  const resultArr = equipmentToArray(parsedResult);
+  console.log("配对结果", parsedResult);
+  console.log("配对结果", resultArr);
 }
 
 onMounted(() => {

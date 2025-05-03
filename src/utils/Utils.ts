@@ -1,4 +1,5 @@
 import type { OcrResult } from "../services/OcrService";
+import type { RawEntry } from "./ArtifactUtils";
 import type { Box } from "./Box";
 
 function checkVerticalOverlapRate(box1: Box, box2: Box) {
@@ -10,12 +11,12 @@ function checkVerticalOverlapRate(box1: Box, box2: Box) {
 	return overlapHeight / box1Height;
 }
 
-export function pairAttribute(data: OcrResult[], threshold: number = 0.8): string[][] {
+export function pairAttribute(data: OcrResult[], threshold: number = 0.8): RawEntry[] {
 	const sortedData = data.sort((a, b) => a.box.y1 - b.box.y1);
 
 	const n = sortedData.length;
 	const paired: boolean[] = new Array(n).fill(false);
-	const results: string[][] = [];
+	const results: RawEntry[] = [];
 
 	const startWithNumber = /^\d/;
 
@@ -28,9 +29,9 @@ export function pairAttribute(data: OcrResult[], threshold: number = 0.8): strin
 		paired[i] = true;
 		if (current.text.startsWith('+')) {
 			results.push([current.text]);
-		} else if (current.text.indexOf('+') >= 0) {
-			const s = current.text.split('+');
-			results.push(s);
+		} else if (current.text.indexOf('+') > 0) {
+			const [k, v] = current.text.split('+', 2);
+			results.push([k, v]);
 		} else {
 			for (let j = 0; j < n; j++) {
 				if (j === i || paired[j]) continue;
