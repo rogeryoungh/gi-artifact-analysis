@@ -1,5 +1,43 @@
-# Vue 3 + TypeScript + Vite
+# 圣遗物分析仪
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基于 Vue + TypeScript + ONNX 实现的纯前端《原神》圣遗物潜力分析器，无需登录，无需上传，快速判断升级价值。
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+🔗 在线体验地址：<https://ys.rogery.dev/>
+
+## 🖼️ 截图预览
+
+![](./screenshot/2025-05-04.png)
+
+## 🎯 介绍
+
+《原神》的圣遗物系统充满了不确定。每位玩家在刷本时总会反复自问：
+
+- 这个胚子值不值得继续升？
+- 第一次歪了还要不要赌？
+- 看着没歪，为什么分却不高？
+
+**圣遗物分析仪**用清晰的图表和完整的升级路径模拟，帮你搞清楚“它的天花板到底在哪”。
+
+## 🚀 快速上手
+
+1. 用截图工具（推荐 [Snipaste](https://www.snipaste.com/)）框选包含副词条和等级的区域（越小越快）。
+2. 粘贴到页面或点击上传。
+3. 立即查看升级结果分布与分析。
+
+## 细节
+
+首先我们知道圣遗物的升级规律。
+
+1. 初始 3 或 4 词条，副词条从 10 个池中随机抽，不重复；
+2. 每次强化选中一个副词条提升，倍率从 {0.7, 0.8, 0.9, 1.0} 中随机抽取；
+3. 总共 5 次强化，构成有限、可穷举的升级树。
+
+因此一次升级主要是 4 词条选一种，再从 4 种挡位随机选一个倍率，从而是 16 种可能。一个初始 4 词条的圣遗物，总共 $16^5 = 1048576$ 种可能，因此暴力枚举是可以接受的。
+
+## 感谢
+
+本项目基于以下开源项目实现 OCR 和识别功能，特此致谢：
+
+- [wormtql/yas](https://github.com/wormtql/yas)：用于图像文字识别与格式提取
+- [PaddleOCR](https://paddlepaddle.github.io/PaddleOCR)：文本检测与识别
+- [RapidOCR](https://rapidai.github.io/RapidOCRDocs)：轻量化 OCR 实现，提供技术参考

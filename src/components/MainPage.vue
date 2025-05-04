@@ -102,10 +102,10 @@ const onSelectPresetCharactor = (event: { value: any; }) => {
       weight.value[AttrKey.CRIT_DMG] = 100;
       break;
     case 2:
-      weight.value[AttrKey.ATK_PERCENT] = 100;
+      weight.value[AttrKey.ATK_PERCENT] = 75;
       weight.value[AttrKey.CRIT_RATE] = 100;
       weight.value[AttrKey.CRIT_DMG] = 100;
-      weight.value[AttrKey.ELEMENTAL_MASTERY] = 100;
+      weight.value[AttrKey.ELEMENTAL_MASTERY] = 75;
       break;
     case 3:
       weight.value[AttrKey.HP_PERCENT] = 100;
@@ -186,8 +186,12 @@ onMounted(() => {
 
 <template>
   <header class="shadow-md">
-    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="container mx-auto py-2 px-4 lg:px-20 flex items-center justify-between">
       <div class="text-xl font-bold">圣遗物分析仪</div>
+      <div class="flex items-center space-x-4">
+        <Button variant="text"  as="a" label="External"
+          href="https://github.com/rogeryoungh/gi-artifact-analysis" target="_blank"> GitHub </Button>
+      </div>
     </div>
   </header>
   <main class="container mx-auto px-4 lg:px-20 my-10">
@@ -231,7 +235,8 @@ onMounted(() => {
       <p class="py-2">让我们看看是哪个旅行者，又出了极品圣遗物呢 ✨</p>
       <div v-if="show.chart">
         <p class="py-2">识别结果：{{ infoRef.artifactInfo }}。</p>
-        <p class="py-2">超过当前分数的概率：{{ (infoRef.currentProbability * 100).toFixed(2) }}%，达到毕业分数的概率：{{ (infoRef.targetProbability * 100).toFixed(2) }}%。</p>
+        <p class="py-2">超过当前分数的概率：{{ (infoRef.currentProbability * 100).toFixed(2) }}%，达到毕业分数的概率：{{
+          (infoRef.targetProbability * 100).toFixed(2) }}%。</p>
       </div>
       <Chart v-if="show.chart" type="line" :data="chartData" :options="chartOptions" />
       <Skeleton v-if="show.chartSkeleton" class="h-80" />
