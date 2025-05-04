@@ -91,9 +91,17 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 			mainRaw = raw[lvlIndex - 1] as [string, string];
 		}
 		// 等级之后的所有双元素都是副属性
-		subRaws = raw
+		const allAttrs = raw
 			.slice(lvlIndex + 1)
 			.filter(e => e.length === 2) as [string, string][];
+		if (allAttrs.length < 5) {
+			// 5 个属性，全当作副属性
+			subRaws = allAttrs;
+		} else {
+			// 2~4 个属性，暂假设第一条是主属性，其余是副属性
+			mainRaw = allAttrs.shift() ?? null;
+			subRaws = allAttrs;
+		}
 	} else {
 		// 无等级
 		const allAttrs = raw.filter(e => e.length === 2) as [string, string][];
