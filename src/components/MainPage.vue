@@ -153,32 +153,54 @@ const startAnalysis = async () => {
   const res = await ocrService.detectAndRecognize(uploadImage.value);
   console.log("OCR 结果", res);
 
-  const pairedResult = pairAttribute(res);
-  const parsedResult = parseEquipment(pairedResult);
-  const resultArr = equipmentToArray(parsedResult);
-  console.log("配对结果", parsedResult);
-  console.log("配对结果", resultArr);
-  infoRef.value.artifactInfo = parsedResult.info;
+  try {
+    const pairedResult = pairAttribute(res);
+    const parsedResult = parseEquipment(pairedResult);
+    const resultArr = equipmentToArray(parsedResult);
+    console.log("配对结果", parsedResult);
+    console.log("配对结果", resultArr);
+    infoRef.value.artifactInfo = parsedResult.info;
 
-  const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
-  const currentScore = infoRef.value.current;
-  const targetScore = infoRef.value.target;
+    const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
+    const currentScore = infoRef.value.current;
+    const targetScore = infoRef.value.target;
 
-  infoRef.value.currentProbability = scores.filter(x => x >= currentScore).length / scores.length;
-  infoRef.value.targetProbability = scores.filter(x => x >= targetScore).length / scores.length;
+    infoRef.value.currentProbability = scores.filter(x => x >= currentScore).length / scores.length;
+    infoRef.value.targetProbability = scores.filter(x => x >= targetScore).length / scores.length;
 
-  const { labels, PDF, CCDF } = calcPDF(scores, 1);
-  chartData.value.labels = labels;
-  chartData.value.datasets[0].data = PDF;
-  chartData.value.datasets[1].data = CCDF;
+    const { labels, PDF, CCDF } = calcPDF(scores, 1);
+    chartData.value.labels = labels;
+    chartData.value.datasets[0].data = PDF;
+    chartData.value.datasets[1].data = CCDF;
 
-  show.value.chart = true;
-  show.value.chartSkeleton = false;
+    show.value.chart = true;
+    show.value.chartSkeleton = false;
+
+    toast.add({
+      severity: "success",
+      summary: "提示",
+      detail: "分析完成，图表已更新",
+      life: 3000,
+    });
+  } catch (error) {
+    toast.add({
+      severity: "error",
+      summary: "错误",
+      detail: "识别失败，" + error,
+      life: 3000,
+    });
+  }
 }
 
 onMounted(() => {
-  setTimeout(() => {
-    ocrService.init();
+  setTimeout(async () => {
+    await ocrService.init();
+    toast.add({
+      severity: "success",
+      summary: "提示",
+      detail: "OCR引擎初始化完成，请直接粘贴或上传，包含副词条和等级信息圣遗物图片",
+      life: 6000,
+    });
   }, 300);
 });
 
@@ -189,8 +211,8 @@ onMounted(() => {
     <div class="container mx-auto py-2 px-4 lg:px-20 flex items-center justify-between">
       <div class="text-xl font-bold">圣遗物分析仪</div>
       <div class="flex items-center space-x-4">
-        <Button variant="text"  as="a" label="External"
-          href="https://github.com/rogeryoungh/gi-artifact-analysis" target="_blank"> GitHub </Button>
+        <Button variant="text" as="a" label="External" href="https://github.com/rogeryoungh/gi-artifact-analysis"
+          target="_blank"> GitHub </Button>
       </div>
     </div>
   </header>
