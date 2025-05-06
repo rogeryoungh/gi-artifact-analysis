@@ -33,16 +33,22 @@ export function pairAttribute(data: OcrResult[], threshold: number = 0.8): RawEn
 			const [k, v] = current.text.split('+', 2);
 			results.push([k, v]);
 		} else {
+			let k = -1;
 			for (let j = 0; j < n; j++) {
 				if (j === i || paired[j]) continue;
 				const next = sortedData[j];
 				const overlapRate = checkVerticalOverlapRate(current.box, next.box);
 				if (overlapRate > threshold) {
-					paired[j] = true;
-					if (current.text !== "" && next.text !== "") {
-						results.push([current.text, next.text]);
+					if (k < 0 || next.box.x1 >= sortedData[k].box.x1) {
+						k = j;
 					}
-					break;
+				}
+			}
+			if (k >= 0) {
+				paired[k] = true;
+				const next = sortedData[k];
+				if (current.text !== "" && next.text !== "") {
+					results.push([current.text, next.text]);
 				}
 			}
 		}
