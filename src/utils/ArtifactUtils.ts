@@ -115,7 +115,7 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 		}
 	}
 	const info = [];
-	info.push(level ? `等级 ${level}` : "等级未知");
+	info.push(level !== null ? `等级 ${level}` : "等级未知");
 	if (mainRaw) {
 		info.push(`主属性 ${mainRaw[0]} ${mainRaw[1]}`);
 	}
@@ -128,7 +128,7 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 	}
 	return {
 		level,
-		mainAttr: mainRaw ? parseSingle(mainRaw) : null,
+		mainAttr: mainRaw !== null ? parseSingle(mainRaw) : null,
 		subAttrs: subRaws.map(parseSingle),
 		info: info.join("，")
 	};
