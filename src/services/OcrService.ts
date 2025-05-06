@@ -17,8 +17,10 @@ export class OcrService {
 	}
 
 	async init() {
-		await this.detWorker.init();
-		await this.recWorker.init();
+		await Promise.all([
+			this.detWorker.init(),
+			this.recWorker.init(),
+		]);
 	}
 
 
