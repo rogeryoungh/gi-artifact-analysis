@@ -1,4 +1,4 @@
-import { InferenceSession, Tensor } from "onnxruntime-web";
+import { InferenceSession, Tensor, env } from "onnxruntime-web";
 
 const TARGET_W = 384;
 const TARGET_H = 32;
@@ -6,6 +6,7 @@ const NUM_CLASSES = 617;
 const REC_MODEL_PATH = "/models/yas.onnx";
 
 export async function initModel() {
+	env.wasm.wasmPaths = 'https://s4.zstatic.net/ajax/libs/onnxruntime-web/1.21.0-dev.20250109-3328eb3bb3/';
 	return await InferenceSession.create(REC_MODEL_PATH);
 }
 

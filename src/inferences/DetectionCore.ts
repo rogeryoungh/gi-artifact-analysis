@@ -1,4 +1,4 @@
-import { InferenceSession, Tensor } from 'onnxruntime-web';
+import { InferenceSession, Tensor, env } from 'onnxruntime-web';
 import { dbPostProcess } from '../utils/DBPostprocess';
 
 const TARGET_W = 640;
@@ -8,6 +8,7 @@ const DET_MODEL_PATH = '/models/det.onnx';
 
 
 export async function initModel() {
+	env.wasm.wasmPaths = 'https://s4.zstatic.net/ajax/libs/onnxruntime-web/1.21.0-dev.20250109-3328eb3bb3/';
 	return await InferenceSession.create(DET_MODEL_PATH);
 }
 
