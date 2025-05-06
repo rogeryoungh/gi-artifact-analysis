@@ -194,11 +194,17 @@ const startAnalysis = async () => {
 
 onMounted(() => {
   setTimeout(async () => {
+    toast.add({
+      severity: "info",
+      summary: "提示",
+      detail: "正在下载 OCR 引擎和模型，预计 20 MB，首次下载可能需要一些时间，请耐心等待",
+      life: 3000,
+    });
     await ocrService.init();
     toast.add({
       severity: "success",
       summary: "提示",
-      detail: "OCR引擎初始化完成，请直接粘贴或上传，包含副词条和等级信息圣遗物图片",
+      detail: "OCR 引擎初始化完成，请直接粘贴或上传，包含副词条和等级信息圣遗物图片",
       life: 6000,
     });
   }, 300);
