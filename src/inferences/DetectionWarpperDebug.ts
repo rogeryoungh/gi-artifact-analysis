@@ -1,7 +1,7 @@
 import { detection, initModel } from "./DetectionCore";
 import type { InferenceSession } from "onnxruntime-web";
 
-export class DetectionAsync {
+export class DetectionWorker {
 	private model: InferenceSession | null = null;
 
 	async init() {

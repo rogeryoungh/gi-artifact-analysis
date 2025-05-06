@@ -1,7 +1,7 @@
 import { recognition, initModel, initWordIndex } from "./RecognitionCore";
 import type { InferenceSession } from "onnxruntime-web";
 
-export class RecognitionAsync {
+export class RecognitionWorker {
 	private model: InferenceSession | null = null;
 	private wordIndex: string[] | null = null;
 
