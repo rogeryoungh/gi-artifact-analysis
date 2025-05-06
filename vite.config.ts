@@ -6,14 +6,11 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  assetsInclude: ["**/*.onnx"],
-  optimizeDeps: {
-    exclude: ["onnxruntime-web"],
-  },
   plugins: [
     vue(),
     tailwindcss(),
     Components({
       resolvers: [PrimeVueResolver()]
-    })]
+    })
+  ]
 })

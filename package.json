@@ -12,7 +12,6 @@
     "@primeuix/themes": "^1.0.3",
     "@primevue/forms": "^4.3.3",
     "@tailwindcss/vite": "^4.1.5",
-    "@techstark/opencv-js": "4.10.0-release.1",
     "chart.js": "^4.4.9",
     "onnxruntime-web": "^1.21.1",
     "primevue": "^4.3.3",
