@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw } from "vue";
+import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
 import JsonUploadButton from "./JsonUploadButton.vue";
-import { AttrEnum, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, PositionName, type Equipment } from "../utils/Artifact";
+import { AttrEnum, AttrName, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, PositionName, type Equipment } from "../utils/Artifact";
 import { convertMonaToEquipment } from "../utils/MonaUtils";
 import { pairAttribute as matchAttribute, parseEquipment } from "../utils/ArtifactParse";
 
@@ -27,7 +27,7 @@ const infoRef = ref({
 
 const filterEquipmentRef = ref({
   set: "",
-  mainAttr: "",
+  mainAttr: { name: "全部" },
   position: { name: "全部" },
   minLevel: 0,
   maxLevel: 19,
@@ -38,7 +38,13 @@ const inputMethodOptions = [
   'mona.json（实验）'
 ]
 
-const positionOptions = PositionName.concat(["全部"]).map((e) => {
+const positionOptions = ["全部"].concat(PositionName).map((e) => {
+  return {
+    name: e,
+  };
+});
+
+const mainAttrOptions = ["全部"].concat(AttrName).map((e) => {
   return {
     name: e,
   };
@@ -158,8 +164,12 @@ const filterMonaJson = (json: Equipment[]) => {
   const minLevel = filterEquipmentRef.value.minLevel;
   const maxLevel = filterEquipmentRef.value.maxLevel;
   const position = PositionName.indexOf(filterEquipmentRef.value.position.name);
+  const mainAttr = AttrName.indexOf(filterEquipmentRef.value.mainAttr.name);
   return json.filter((e) => {
-    if (e.position !== null && position >= 0 && e.position !== position) {
+    if (mainAttr !== -1 && e.mainAttr !== null && e.mainAttr.key !== mainAttr) {
+      return false;
+    }
+    if (position !== -1 && e.position !== null && e.position !== position) {
       return false;
     }
     if (e.level !== null && e.level < minLevel) {
@@ -358,11 +368,12 @@ const nextOnClick = () => {
         <Panel header="过滤" v-if="selectInputMethod === 'mona.json（实验）'" class="mt-4">
           <div class="mt-2 flex flex-row gap-4 items-center">
             <FloatLabel class="flex-3">
-              <Select optionLabel="name" class="w-full" />
-              <label for="over_label">套装</label>
+              <Select optionLabel="name" class="w-full" disabled />
+              <label for="over_label">套装 TODO</label>
             </FloatLabel>
             <FloatLabel class="flex-2">
-              <Select optionLabel="name" class="w-full" />
+              <Select optionLabel="name" class="w-full" :options="mainAttrOptions"
+                v-model="filterEquipmentRef.mainAttr" />
               <label for="over_label">主词条</label>
             </FloatLabel>
           </div>
