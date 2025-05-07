@@ -1,10 +1,10 @@
-import { hasPercentValue, type AttrKey, type EquipmentAttrs } from "./ArtifactUtils";
+import type { AttrEnum, Equipment } from "./Artifact";
 
 
 export interface MonaEquipment {
-	setName: string; // 套装名称
-	position: string; // 位置名称
-	mainTag: MonaEquipmentAttrs; // 主属性标签
+	setName: string;                  // 套装名称
+	position: string;                 // 位置名称
+	mainTag: MonaEquipmentAttrs;      // 主属性标签
 	normalTags: MonaEquipmentAttrs[]; // 副属性标签
 	omit: boolean;
 	level: number; // 等级
@@ -27,18 +27,23 @@ const MonaAttrName = [
 	"criticalDamage",
 	"elementalMastery",
 	"recharge",
+	"windBonus",
+	"rockBonus",
+	"thunderBonus",
+	"dendroBonus",
+	"waterBonus",
+	"fireBonus",
+	"iceBonus",
+	"physicalBonus",
+	"cureEffect",
 ];
 
-export function convertMonaToEquipment(mona: any): EquipmentAttrs {
+export function convertMonaToEquipment(mona: any): Equipment {
 	const { normalTags, level } = mona;
 	const subAttrs = normalTags.map((tag: any) => {
-		const key = MonaAttrName.indexOf(tag.name) as AttrKey;
+		const key = MonaAttrName.indexOf(tag.name) as AttrEnum;
 		const value = tag.value;
-		if (hasPercentValue(key)) {
-			return { key, value: value * 100 };
-		} else {
-			return { key, value };
-		}
+		return { key, value };
 	});
 	return {
 		set: null,
@@ -46,6 +51,5 @@ export function convertMonaToEquipment(mona: any): EquipmentAttrs {
 		level,
 		mainAttr: null,
 		subAttrs,
-		info: `TODO`,
 	};
 }

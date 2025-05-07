@@ -2,12 +2,12 @@
 import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
-import { pairAttribute } from "../utils/Utils";
-import { AttrKey, AttrNameShort, calcPDF, calculateScore, equipmentToArray, equipmentToString, parseEquipment, type EquipmentAttrs } from "../utils/ArtifactUtils";
 import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
 import JsonUploadButton from "./JsonUploadButton.vue";
+import { AttrEnum, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, type Equipment } from "../utils/Artifact";
 import { convertMonaToEquipment } from "../utils/MonaUtils";
+import { pairAttribute as matchAttribute, parseEquipment } from "../utils/ArtifactParse";
 
 const toast = useToast();
 
@@ -119,21 +119,21 @@ const onSelectPresetCharactor = (event: { value: any; }) => {
   weight.value.fill(0);
   switch (event.value.value) {
     case 1:
-      weight.value[AttrKey.ATK_PERCENT] = 100;
-      weight.value[AttrKey.CRIT_RATE] = 100;
-      weight.value[AttrKey.CRIT_DMG] = 100;
+      weight.value[AttrEnum.ATK_PERCENT] = 100;
+      weight.value[AttrEnum.CRIT_RATE] = 100;
+      weight.value[AttrEnum.CRIT_DMG] = 100;
       break;
     case 2:
-      weight.value[AttrKey.ATK_PERCENT] = 75;
-      weight.value[AttrKey.CRIT_RATE] = 100;
-      weight.value[AttrKey.CRIT_DMG] = 100;
-      weight.value[AttrKey.ELEMENTAL_MASTERY] = 75;
+      weight.value[AttrEnum.ATK_PERCENT] = 75;
+      weight.value[AttrEnum.CRIT_RATE] = 100;
+      weight.value[AttrEnum.CRIT_DMG] = 100;
+      weight.value[AttrEnum.ELEMENTAL_MASTERY] = 75;
       break;
     case 3:
-      weight.value[AttrKey.HP_PERCENT] = 100;
-      weight.value[AttrKey.CRIT_RATE] = 100;
-      weight.value[AttrKey.CRIT_DMG] = 100;
-      weight.value[AttrKey.ENERGY_RECHARGE] = 15;
+      weight.value[AttrEnum.HP_PERCENT] = 100;
+      weight.value[AttrEnum.CRIT_RATE] = 100;
+      weight.value[AttrEnum.CRIT_DMG] = 100;
+      weight.value[AttrEnum.ENERGY_RECHARGE] = 15;
       break;
   }
 }
@@ -146,9 +146,9 @@ const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     }
   });
 
-const monaJson = ref<EquipmentAttrs[]>([]);
+const monaJson = ref<Equipment[]>([]);
 
-const filterMonaJson = (json: EquipmentAttrs[]) => {
+const filterMonaJson = (json: Equipment[]) => {
   return json.filter((e) => {
     if (e.level !== null && e.level < filterEquipmentRef.value.minLevel) {
       return false;
@@ -214,7 +214,7 @@ const processEquipment = async () => {
     }
     const res = await ocrService.detectAndRecognize(uploadImage.value);
     console.log("OCR 结果", res);
-    const pairedResult = pairAttribute(res);
+    const pairedResult = matchAttribute(res);
     const parsedResult = parseEquipment(pairedResult);
     console.log("配对结果", parsedResult);
     return parsedResult;
@@ -240,7 +240,7 @@ const startAnalysis = async () => {
   try {
     const parsedResult = await processEquipment();
 
-    const resultArr = equipmentToArray(parsedResult);
+    const resultArr = equipmentToVector(parsedResult);
     infoRef.value.artifactInfo = equipmentToString(parsedResult);
 
     const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
