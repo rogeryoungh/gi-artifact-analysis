@@ -50,12 +50,11 @@ export function hasPercentValue(key: AttrKey): boolean {
 }
 
 export interface EquipmentAttrs {
-	set: string | null;               // 套装名称
-	position: string | null;           // 位置名称
-	level: number | null;       // 装备等级，未识别到则为 null
-	mainAttr: ParsedAttr | null;// 主属性（有等级时，等级上一条；否则 null）
-	subAttrs: ParsedAttr[];     // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
-	info: string;               // 识别到的属性信息
+	set: string | null;           // 套装名称
+	position: string | null;      // 位置名称
+	level: number | null;         // 装备等级，未识别到则为 null
+	mainAttr: ParsedAttr | null;  // 主属性（有等级时，等级上一条；否则 null）
+	subAttrs: ParsedAttr[];       // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
 }
 
 export function parsedAttrToString(attr: ParsedAttr): string {
@@ -68,7 +67,30 @@ export function parsedAttrToString(attr: ParsedAttr): string {
 	}
 }
 
+export function equipmentToString(equipment: EquipmentAttrs): string {
+	const ret = [];
 
+	if (equipment.set !== null) {
+		ret.push(equipment.set);
+	}
+	if (equipment.position !== null) {
+		ret.push(equipment.position);
+	}
+	if (equipment.level !== null) {
+		ret.push(`等级 ${equipment.level}`);
+	} else {
+		ret.push("等级未知");
+	}
+	if (equipment.mainAttr) {
+		ret.push(`主属性 ${parsedAttrToString(equipment.mainAttr)}`);
+	}
+	if (equipment.subAttrs.length > 0) {
+		ret.push(...equipment.subAttrs.map(parsedAttrToString));
+	} else {
+		ret.push("无副属性");
+	}
+	return ret.join("，");
+}
 
 function parseSingle([label, val]: [string, string]): ParsedAttr {
 	// 去掉可能的空格
@@ -141,25 +163,12 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 			subRaws = allAttrs;
 		}
 	}
-	const info = [];
-	info.push(level !== null ? `等级 ${level}` : "等级未知");
-	if (mainRaw) {
-		info.push(`主属性 ${mainRaw[0]} ${mainRaw[1]}`);
-	}
-	if (subRaws.length > 0) {
-		subRaws.forEach(([label, val]) => {
-			info.push(`${label} ${val}`);
-		});
-	} else {
-		info.push("无副属性");
-	}
 	return {
 		set: null,
 		position: null,
 		level,
 		mainAttr: mainRaw !== null ? parseSingle(mainRaw) : null,
 		subAttrs: subRaws.map(parseSingle),
-		info: info.join("，"),
 	};
 }
 

@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
-import { AttrKey, AttrNameShort, calcPDF, calculateScore, equipmentToArray, parseEquipment, type EquipmentAttrs } from "../utils/ArtifactUtils";
+import { AttrKey, AttrNameShort, calcPDF, calculateScore, equipmentToArray, equipmentToString, parseEquipment, type EquipmentAttrs } from "../utils/ArtifactUtils";
 import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
 import JsonUploadButton from "./JsonUploadButton.vue";
@@ -219,7 +219,7 @@ const startAnalysis = async () => {
     const parsedResult = await processEquipment();
 
     const resultArr = equipmentToArray(parsedResult);
-    infoRef.value.artifactInfo = parsedResult.info;
+    infoRef.value.artifactInfo = equipmentToString(parsedResult);
 
     const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
     const currentScore = infoRef.value.current;
