@@ -50,7 +50,7 @@ export const SubAttrBasis = [
 	6.48, 	// 元素充能效率
 ]
 
-export enum Position {
+export enum PositionEnum {
 	Flower = 0,
 	Sands = 1,
 	Cup = 2,
@@ -78,7 +78,7 @@ export interface EquipmentStr {
 
 export interface Equipment {
 	set: string | null;           // 套装名称
-	position: string | null;      // 位置名称
+	position: PositionEnum | null;      // 位置名称
 	level: number | null;         // 装备等级，未识别到则为 null
 	mainAttr: AttrPair | null;    // 主属性（有等级时，等级上一条；否则 null）
 	subAttrs: AttrPair[];         // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
@@ -106,7 +106,7 @@ export function equipmentToString(equipment: Equipment): string {
 		ret.push(equipment.set);
 	}
 	if (equipment.position !== null) {
-		ret.push(equipment.position);
+		ret.push(PositionName[equipment.position]);
 	}
 	if (equipment.level !== null) {
 		ret.push(`等级 ${equipment.level}`);

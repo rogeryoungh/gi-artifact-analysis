@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, toRaw } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
 import JsonUploadButton from "./JsonUploadButton.vue";
-import { AttrEnum, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, type Equipment } from "../utils/Artifact";
+import { AttrEnum, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, PositionName, type Equipment } from "../utils/Artifact";
 import { convertMonaToEquipment } from "../utils/MonaUtils";
 import { pairAttribute as matchAttribute, parseEquipment } from "../utils/ArtifactParse";
 
@@ -28,7 +28,7 @@ const infoRef = ref({
 const filterEquipmentRef = ref({
   set: "",
   mainAttr: "",
-  position: "",
+  position: { name: "全部" },
   minLevel: 0,
   maxLevel: 19,
 });
@@ -37,6 +37,12 @@ const inputMethodOptions = [
   '截图',
   'mona.json（实验）'
 ]
+
+const positionOptions = PositionName.concat(["全部"]).map((e) => {
+  return {
+    name: e,
+  };
+});
 
 const selectInputMethod = ref('截图');
 
@@ -149,11 +155,17 @@ const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 const monaJson = ref<Equipment[]>([]);
 
 const filterMonaJson = (json: Equipment[]) => {
+  const minLevel = filterEquipmentRef.value.minLevel;
+  const maxLevel = filterEquipmentRef.value.maxLevel;
+  const position = PositionName.indexOf(filterEquipmentRef.value.position.name);
   return json.filter((e) => {
-    if (e.level !== null && e.level < filterEquipmentRef.value.minLevel) {
+    if (e.position !== null && position >= 0 && e.position !== position) {
       return false;
     }
-    if (e.level !== null && e.level > filterEquipmentRef.value.maxLevel) {
+    if (e.level !== null && e.level < minLevel) {
+      return false;
+    }
+    if (e.level !== null && e.level > maxLevel) {
       return false;
     }
     return true;
@@ -162,8 +174,8 @@ const filterMonaJson = (json: Equipment[]) => {
 
 const onJsonUpload = async () => {
   const file = uploadJson.value!;
-  const content = await file.text();
   try {
+    const content = await file.text();
     const json = JSON.parse(content);
     const parseArray = (json: any) => {
       return json.map((e: any) => {
@@ -356,7 +368,8 @@ const nextOnClick = () => {
           </div>
           <div class="flex flex-row gap-4 mt-8 items-center">
             <FloatLabel class="flex-1">
-              <Select optionLabel="name" class="w-full" />
+              <Select optionLabel="name" class="w-full" :options="positionOptions"
+                v-model="filterEquipmentRef.position" />
               <label for="over_label">部位</label>
             </FloatLabel>
             <FloatLabel class="flex-1">

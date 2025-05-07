@@ -1,4 +1,4 @@
-import type { AttrEnum, Equipment } from "./Artifact";
+import type { AttrEnum, AttrPair, Equipment, PositionEnum } from "./Artifact";
 
 
 export interface MonaEquipment {
@@ -38,18 +38,33 @@ const MonaAttrName = [
 	"cureEffect",
 ];
 
+const MonaPositionName = [
+	"flower",
+	"feather",
+	"sand",
+	"cup",
+	"head",
+]
+
+function convertTagToAttr(tag: MonaEquipmentAttrs): AttrPair {
+	const key = MonaAttrName.indexOf(tag.name) as AttrEnum;
+	const value = tag.value;
+	return { key, value };
+}
+
+function convertPositionToEnum(position: string): PositionEnum {
+	const index = MonaPositionName.indexOf(position);
+	return index as PositionEnum;
+}
+
+
 export function convertMonaToEquipment(mona: any): Equipment {
-	const { normalTags, level } = mona;
-	const subAttrs = normalTags.map((tag: any) => {
-		const key = MonaAttrName.indexOf(tag.name) as AttrEnum;
-		const value = tag.value;
-		return { key, value };
-	});
+	const { position, mainTag, normalTags, level } = mona;
 	return {
 		set: null,
-		position: null,
+		position: convertPositionToEnum(position),
 		level,
-		mainAttr: null,
-		subAttrs,
+		mainAttr: convertTagToAttr(mainTag),
+		subAttrs: normalTags.map(convertTagToAttr),
 	};
 }
