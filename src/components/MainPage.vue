@@ -207,7 +207,7 @@ const onJsonUpload = async () => {
       life: 3000,
     });
 
-    startAnalysis();
+    await startAnalysis();
   } catch (error) {
     toast.add({
       severity: "error",
@@ -225,7 +225,7 @@ const onJsonUpload = async () => {
 const processEquipment = async () => {
   if (selectInputMethod.value === 'mona.json（实验）') {
     if (monaJson.value.length === 0) {
-      throw new Error("请先上传 JSON 文件");
+      throw new Error("JSON 长度为 0，请检查过滤条件或者文件");
     }
     const current = monaJson.value[selectJsonId.value - 1];
     console.log("当前装备", current);
