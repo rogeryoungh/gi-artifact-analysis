@@ -1,4 +1,3 @@
-<!-- ImageUploader.vue -->
 <template>
   <div>
     <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileChange" />

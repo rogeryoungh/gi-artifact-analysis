@@ -5,6 +5,11 @@ export const AttrName = [
 	"暴击率", "暴击伤害", "元素精通", "元素充能效率"
 ];
 
+export const AttrNameShort = [
+	"攻击", "攻击%", "生命", "生命%", "防御", "防御%",
+	"暴率", "暴伤", "精通", "充能"
+];
+
 const AttrBasis = [
 	19.45, // 攻击力
 	5.83,	// 攻击力%
@@ -36,12 +41,34 @@ interface ParsedAttr {
 	value: number;      // 数值，百分比已转换为小数（如 5.8% → 5.8）
 }
 
-interface EquipmentAttrs {
+export function hasPercent(key: AttrKey): boolean {
+	return key === AttrKey.ATK_PERCENT || key === AttrKey.DEF_PERCENT || key === AttrKey.HP_PERCENT;
+}
+
+export function hasPercentValue(key: AttrKey): boolean {
+	return hasPercent(key) || key === AttrKey.CRIT_RATE || key === AttrKey.CRIT_DMG || key === AttrKey.ENERGY_RECHARGE;
+}
+
+export interface EquipmentAttrs {
+	set: string | null;               // 套装名称
+	position: string | null;           // 位置名称
 	level: number | null;       // 装备等级，未识别到则为 null
 	mainAttr: ParsedAttr | null;// 主属性（有等级时，等级上一条；否则 null）
 	subAttrs: ParsedAttr[];     // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
 	info: string;               // 识别到的属性信息
 }
+
+export function parsedAttrToString(attr: ParsedAttr): string {
+	const name = AttrName[attr.key];
+	const truncName = name.endsWith("%") ? name.slice(0, -1) : name;
+	if (hasPercentValue(attr.key)) {
+		return `${truncName}+${attr.value.toFixed(1)}%`;
+	} else {
+		return `${truncName}+${attr.value.toFixed(0)}`;
+	}
+}
+
+
 
 function parseSingle([label, val]: [string, string]): ParsedAttr {
 	// 去掉可能的空格
@@ -127,10 +154,12 @@ export function parseEquipment(raw: RawEntry[]): EquipmentAttrs {
 		info.push("无副属性");
 	}
 	return {
+		set: null,
+		position: null,
 		level,
 		mainAttr: mainRaw !== null ? parseSingle(mainRaw) : null,
 		subAttrs: subRaws.map(parseSingle),
-		info: info.join("，")
+		info: info.join("，"),
 	};
 }
 

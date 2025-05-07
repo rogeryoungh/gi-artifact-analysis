@@ -3,9 +3,11 @@ import { ref, onMounted } from "vue";
 import ImageUploaderButton from "./ImageUploaderButton.vue";
 import { OcrService } from "../services/OcrService";
 import { pairAttribute } from "../utils/Utils";
-import { AttrKey, AttrName, calcPDF, calculateScore, equipmentToArray, parseEquipment } from "../utils/ArtifactUtils";
+import { AttrKey, AttrNameShort, calcPDF, calculateScore, equipmentToArray, parseEquipment, type EquipmentAttrs } from "../utils/ArtifactUtils";
 import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
+import JsonUploadButton from "./JsonUploadButton.vue";
+import { convertMonaToEquipment } from "../utils/MonaUtils";
 
 const toast = useToast();
 
@@ -22,6 +24,15 @@ const infoRef = ref({
   artifactInfo: ""
 });
 
+const inputMethodOptions = [
+  '截图',
+  'mona.json（实验）'
+]
+
+const selectInputMethod = ref('截图');
+
+const selectJsonId = ref(1);
+
 const charactors = [
   { name: "攻击力模型", value: 1 },
   { name: "刻晴", value: 2 },
@@ -31,6 +42,8 @@ const charactors = [
 const show = ref({
   chart: false,
   chartSkeleton: false,
+  prevDisable: false,
+  nextDisable: false,
 });
 
 const chartData = ref<ChartData>({
@@ -120,26 +133,78 @@ const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   .map((e) => {
     return {
       key: e,
-      label: AttrName[e],
+      label: AttrNameShort[e],
     }
   });
 
-const startAnalysis = async () => {
-  if (!uploadImage.value) {
+const monaJson = ref<EquipmentAttrs[]>([]);
+
+const onJsonUpload = async (file: File) => {
+  const content = await file.text();
+  try {
+    const json = JSON.parse(content);
+    const parseArray = (json: any) => {
+      return json.map((e: any) => {
+        return convertMonaToEquipment(e);
+      });
+    };
+    const arr = [].concat(
+      parseArray(json["flower"] ?? []),
+      parseArray(json["feather"] ?? []),
+      parseArray(json["sand"] ?? []),
+      parseArray(json["cup"] ?? []),
+      parseArray(json["head"] ?? []),
+    );
+    monaJson.value = arr;
+    toast.add({
+      severity: "success",
+      summary: "提示",
+      detail: "JSON 文件解析成功，包含 " + arr.length + " 个圣遗物",
+      life: 3000,
+    });
+
+    startAnalysis();
+  } catch (error) {
     toast.add({
       severity: "error",
       summary: "错误",
-      detail: "请先上传图片",
+      detail: "JSON 文件解析失败，" + error,
       life: 3000,
     });
-    return;
+  } finally {
+    selectJsonId.value = 1;
+    show.value.prevDisable = monaJson.value.length >= 1
+    show.value.nextDisable = monaJson.value.length <= 1;
   }
+}
+
+const processEquipment = async () => {
+  if (selectInputMethod.value === 'mona.json（实验）') {
+    if (monaJson.value.length === 0) {
+      throw new Error("请先上传 JSON 文件");
+    }
+    const current = monaJson.value[selectJsonId.value - 1];
+    console.log("当前装备", current);
+    return current;
+  } else {
+    if (!uploadImage.value) {
+      throw new Error("请先上传图片或截图");
+    }
+    const res = await ocrService.detectAndRecognize(uploadImage.value);
+    console.log("OCR 结果", res);
+    const pairedResult = pairAttribute(res);
+    const parsedResult = parseEquipment(pairedResult);
+    console.log("配对结果", parsedResult);
+    return parsedResult;
+  }
+}
+
+const startAnalysis = async () => {
   show.value.chart = false;
   show.value.chartSkeleton = true;
 
   const weights = Array.from(weight.value).map((e) => e / 100);
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  console.log("权重", totalWeight);
   if (totalWeight < 0.1) {
     toast.add({
       severity: "warn",
@@ -150,15 +215,10 @@ const startAnalysis = async () => {
   }
   console.log("开始分析", weights);
 
-  const res = await ocrService.detectAndRecognize(uploadImage.value);
-  console.log("OCR 结果", res);
-
   try {
-    const pairedResult = pairAttribute(res);
-    const parsedResult = parseEquipment(pairedResult);
+    const parsedResult = await processEquipment();
+
     const resultArr = equipmentToArray(parsedResult);
-    console.log("配对结果", parsedResult);
-    console.log("配对结果", resultArr);
     infoRef.value.artifactInfo = parsedResult.info;
 
     const scores = calculateScore(parsedResult.level ?? 0, 20, resultArr, weights).map(x => x * 7.8);
@@ -189,6 +249,8 @@ const startAnalysis = async () => {
       detail: "识别失败，" + error,
       life: 3000,
     });
+    show.value.chart = false;
+    show.value.chartSkeleton = false;
   }
 }
 
@@ -210,6 +272,23 @@ onMounted(() => {
   }, 300);
 });
 
+const prevOnClick = () => {
+  if (selectJsonId.value > 1) {
+    selectJsonId.value--;
+    show.value.prevDisable = selectJsonId.value === 1;
+    show.value.nextDisable = false;
+    startAnalysis();
+  }
+}
+
+const nextOnClick = () => {
+  if (selectJsonId.value < monaJson.value.length) {
+    selectJsonId.value++;
+    show.value.nextDisable = selectJsonId.value === monaJson.value.length;
+    show.value.prevDisable = false;
+    startAnalysis();
+  }
+}
 </script>
 
 <template>
@@ -225,32 +304,73 @@ onMounted(() => {
   <main class="container mx-auto px-4 lg:px-20 my-10">
     <Toast />
     <div class="flex flex-col lg:flex-row gap-4">
-      <Panel header="输入" class="flex-2">
-        <div class="flex items-center justify-center h-80">
-          <ImageUploaderButton class="w-full h-full" @update="(t) => uploadImage = t"></ImageUploaderButton>
-        </div>
-      </Panel>
+      <div class="flex-3">
+        <Panel header="输入">
+          <div class="flex justify-center mb-2">
+            <SelectButton v-model="selectInputMethod" :options="inputMethodOptions" :allow-empty="false" />
+          </div>
+          <div v-if="selectInputMethod === '截图'" class="flex items-center justify-center h-80">
+            <ImageUploaderButton class="w-full h-full" @update="(t) => uploadImage = t"></ImageUploaderButton>
+          </div>
+          <div v-if="selectInputMethod === 'mona.json（实验）'">
+            <div class="w-full flex  gap-4 mt-8 items-center justify-center">
+              <JsonUploadButton @update="(t) => onJsonUpload(t)" />
+              <div>总计 {{ selectJsonId }} / {{ monaJson.length }} </div>
+              <Button variant="text" :disabled="show.prevDisable" @click="prevOnClick">上一个</Button>
+              <Button variant="text" :disabled="show.nextDisable" @click="nextOnClick">下一个</Button>
+            </div>
+          </div>
+        </Panel>
+        <Panel header="过滤" v-if="selectInputMethod === 'mona.json（实验）'" class="mt-4">
+          <div class="mt-2 flex flex-row gap-4 items-center">
+            <FloatLabel class="flex-3">
+              <Select optionLabel="name" class="w-full" />
+              <label for="over_label">套装</label>
+            </FloatLabel>
+            <FloatLabel class="flex-2">
+              <Select optionLabel="name" class="w-full" />
+              <label for="over_label">主词条</label>
+            </FloatLabel>
+          </div>
+          <div class="flex flex-row gap-4 mt-8 items-center">
+            <FloatLabel class="flex-1">
+              <Select optionLabel="name" class="w-full" />
+              <label for="over_label">部位</label>
+            </FloatLabel>
+            <FloatLabel class="flex-1">
+              <InputNumber inputId="over_label" input-class="w-full" />
+              <label for="over_label">最低等级</label>
+            </FloatLabel>
+            <FloatLabel class="flex-1">
+              <InputNumber inputId="over_label" input-class="w-full" />
+              <label for="over_label">最高等级</label>
+            </FloatLabel>
+            <Button class="flex-[0.8]" @click="startAnalysis" disabled>
+              过滤 TODO
+            </Button>
+          </div>
+        </Panel>
+      </div>
       <Panel header="参数" class="flex-3">
         <div class="mt-4 grid grid-cols-2 gap-x-8 gap-y-4">
           <div v-for="item in entries" :key="item.key" class="flex items-center space-x-4">
-            <label for="param1" class="text-gray-700 w-24"> {{ item.label }}</label>
+            <label for="param1" class="text-gray-700 w-12"> {{ item.label }}</label>
             <Slider class="flex-1" v-model="weight[item.key]" />
             <label>{{ (weight[item.key] / 100).toFixed(2) }}</label>
           </div>
         </div>
-        <div class="flex flex-warp gap-4 mt-8">
-          <FloatLabel>
-            <Select editable :options="charactors" @change="onSelectPresetCharactor" optionLabel="name"
-              class="w-full md:w-56" />
+        <div class="flex flex-row gap-4 mt-8">
+          <FloatLabel class="flex-1">
+            <Select editable :options="charactors" @change="onSelectPresetCharactor" optionLabel="name" cass="w-full" />
             <label for="over_label">预设角色</label>
           </FloatLabel>
 
-          <FloatLabel>
-            <InputNumber inputId="over_label" v-model="infoRef.current" />
+          <FloatLabel class="flex-1">
+            <InputNumber inputId="over_label" v-model="infoRef.current" input-class="w-full" />
             <label for="over_label">当前分数</label>
           </FloatLabel>
-          <FloatLabel>
-            <InputNumber inputId="over_label" v-model="infoRef.target" />
+          <FloatLabel class="flex-1">
+            <InputNumber inputId="over_label" v-model="infoRef.target" input-class="w-full" />
             <label for="over_label">毕业分数</label>
           </FloatLabel>
         </div>
