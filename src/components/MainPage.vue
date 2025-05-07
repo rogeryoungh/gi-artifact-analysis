@@ -42,8 +42,8 @@ const charactors = [
 const show = ref({
   chart: false,
   chartSkeleton: false,
-  prevDisable: false,
-  nextDisable: false,
+  prevDisable: true,
+  nextDisable: true,
 });
 
 const chartData = ref<ChartData>({
@@ -306,14 +306,14 @@ const nextOnClick = () => {
     <div class="flex flex-col lg:flex-row gap-4">
       <div class="flex-3">
         <Panel header="输入">
-          <div class="flex justify-center mb-2">
+          <div class="flex justify-center mb-4">
             <SelectButton v-model="selectInputMethod" :options="inputMethodOptions" :allow-empty="false" />
           </div>
           <div v-if="selectInputMethod === '截图'" class="flex items-center justify-center h-80">
             <ImageUploaderButton class="w-full h-full" @update="(t) => uploadImage = t"></ImageUploaderButton>
           </div>
           <div v-if="selectInputMethod === 'mona.json（实验）'">
-            <div class="w-full flex  gap-4 mt-8 items-center justify-center">
+            <div class="w-full flex  gap-4 items-center justify-center">
               <JsonUploadButton @update="(t) => onJsonUpload(t)" />
               <div>总计 {{ selectJsonId }} / {{ monaJson.length }} </div>
               <Button variant="text" :disabled="show.prevDisable" @click="prevOnClick">上一个</Button>
