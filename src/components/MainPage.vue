@@ -12,6 +12,7 @@ import { convertMonaToEquipment } from "../utils/MonaUtils";
 const toast = useToast();
 
 const uploadImage = ref<File | null>(null);
+const uploadJson = ref<File | null>(null);
 const ocrService = new OcrService();
 
 const weight = ref([0, 0, 0, 0, 0, 0, 100, 100, 0, 0]);
@@ -21,7 +22,15 @@ const infoRef = ref({
   target: 45,
   currentProbability: 0,
   targetProbability: 0,
-  artifactInfo: ""
+  artifactInfo: "",
+});
+
+const filterEquipmentRef = ref({
+  set: "",
+  mainAttr: "",
+  position: "",
+  minLevel: 0,
+  maxLevel: 19,
 });
 
 const inputMethodOptions = [
@@ -139,7 +148,20 @@ const entries = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 const monaJson = ref<EquipmentAttrs[]>([]);
 
-const onJsonUpload = async (file: File) => {
+const filterMonaJson = (json: EquipmentAttrs[]) => {
+  return json.filter((e) => {
+    if (e.level !== null && e.level < filterEquipmentRef.value.minLevel) {
+      return false;
+    }
+    if (e.level !== null && e.level > filterEquipmentRef.value.maxLevel) {
+      return false;
+    }
+    return true;
+  });
+}
+
+const onJsonUpload = async () => {
+  const file = uploadJson.value!;
   const content = await file.text();
   try {
     const json = JSON.parse(content);
@@ -155,11 +177,11 @@ const onJsonUpload = async (file: File) => {
       parseArray(json["cup"] ?? []),
       parseArray(json["head"] ?? []),
     );
-    monaJson.value = arr;
+    monaJson.value = filterMonaJson(arr);
     toast.add({
       severity: "success",
       summary: "提示",
-      detail: "JSON 文件解析成功，包含 " + arr.length + " 个圣遗物",
+      detail: "JSON 文件解析成功，包含 " + arr.length + " 个圣遗物，过滤得到 " + monaJson.value.length + " 个",
       life: 3000,
     });
 
@@ -314,7 +336,7 @@ const nextOnClick = () => {
           </div>
           <div v-if="selectInputMethod === 'mona.json（实验）'">
             <div class="w-full flex  gap-4 items-center justify-center">
-              <JsonUploadButton @update="(t) => onJsonUpload(t)" />
+              <JsonUploadButton @update="(t) => { uploadJson = t; onJsonUpload() }" />
               <div>总计 {{ selectJsonId }} / {{ monaJson.length }} </div>
               <Button variant="text" :disabled="show.prevDisable" @click="prevOnClick">上一个</Button>
               <Button variant="text" :disabled="show.nextDisable" @click="nextOnClick">下一个</Button>
@@ -338,15 +360,15 @@ const nextOnClick = () => {
               <label for="over_label">部位</label>
             </FloatLabel>
             <FloatLabel class="flex-1">
-              <InputNumber inputId="over_label" input-class="w-full" />
+              <InputNumber inputId="over_label" input-class="w-full" v-model="filterEquipmentRef.minLevel" />
               <label for="over_label">最低等级</label>
             </FloatLabel>
             <FloatLabel class="flex-1">
-              <InputNumber inputId="over_label" input-class="w-full" />
+              <InputNumber inputId="over_label" input-class="w-full" v-model="filterEquipmentRef.maxLevel" />
               <label for="over_label">最高等级</label>
             </FloatLabel>
-            <Button class="flex-[0.8]" @click="startAnalysis" disabled>
-              过滤 TODO
+            <Button class="flex-[0.8]" @click="onJsonUpload">
+              过滤
             </Button>
           </div>
         </Panel>
