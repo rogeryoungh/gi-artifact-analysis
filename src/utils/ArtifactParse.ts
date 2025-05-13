@@ -150,7 +150,7 @@ export function parseEquipment(raw: RawEntry[]): Equipment {
 		}
 	}
 	return {
-		set: null,
+		setName: null,
 		position: null,
 		level,
 		mainAttr: mainRaw ? parseSingle(mainRaw) : null,

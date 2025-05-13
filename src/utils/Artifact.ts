@@ -77,11 +77,11 @@ export interface EquipmentStr {
 }
 
 export interface Equipment {
-	set: string | null;           // 套装名称
-	position: PositionEnum | null;      // 位置名称
-	level: number | null;         // 装备等级，未识别到则为 null
-	mainAttr: AttrPair | null;    // 主属性（有等级时，等级上一条；否则 null）
-	subAttrs: AttrPair[];         // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
+	setName: string | null;           // 套装名称
+	position: PositionEnum | null;    // 位置名称
+	level: number | null;             // 装备等级，未识别到则为 null
+	mainAttr: AttrPair | null;        // 主属性（有等级时，等级上一条；否则 null）
+	subAttrs: AttrPair[];             // 副属性，2~4 条（如果无等级且总数是 5，则全部算作副属性）
 }
 
 export function hasPercentValue(key: AttrEnum): boolean {
@@ -102,8 +102,8 @@ export function attrToString(attr: AttrPair): string {
 export function equipmentToString(equipment: Equipment): string {
 	const ret = [];
 
-	if (equipment.set !== null) {
-		ret.push(equipment.set);
+	if (equipment.setName !== null) {
+		ret.push(equipment.setName);
 	}
 	if (equipment.position !== null) {
 		ret.push(PositionName[equipment.position]);

@@ -6,7 +6,7 @@ import type { ChartData } from "chart.js";
 import { useToast } from "primevue";
 import JsonUploadButton from "./JsonUploadButton.vue";
 import { AttrEnum, AttrName, AttrNameShort, calcPDF, calculateScore, equipmentToString, equipmentToVector, PositionName, type Equipment } from "../utils/Artifact";
-import { convertMonaToEquipment } from "../utils/MonaUtils";
+import { convertMonaToEquipment, getSetNameChsDisplay } from "../utils/MonaUtils";
 import { pairAttribute as matchAttribute, parseEquipment } from "../utils/ArtifactParse";
 
 const toast = useToast();
@@ -26,7 +26,7 @@ const infoRef = ref({
 });
 
 const filterEquipmentRef = ref({
-  set: "",
+  setName: { name: "全部", img: "" },
   mainAttr: { name: "全部" },
   position: { name: "全部" },
   minLevel: 0,
@@ -49,6 +49,8 @@ const mainAttrOptions = ["全部"].concat(AttrName).map((e) => {
     name: e,
   };
 });
+
+const setNameOptions = [{ name: "全部", img: ""}].concat(getSetNameChsDisplay());
 
 const selectInputMethod = ref('截图');
 
@@ -163,9 +165,13 @@ const monaJson = ref<Equipment[]>([]);
 const filterMonaJson = (json: Equipment[]) => {
   const minLevel = filterEquipmentRef.value.minLevel;
   const maxLevel = filterEquipmentRef.value.maxLevel;
+  const setName = filterEquipmentRef.value.setName.name;
   const position = PositionName.indexOf(filterEquipmentRef.value.position.name);
   const mainAttr = AttrName.indexOf(filterEquipmentRef.value.mainAttr.name);
   return json.filter((e) => {
+    if (setName !== "" && setName !== "全部" && e.setName !== null && e.setName !== setName) {
+      return false;
+    }
     if (mainAttr !== -1 && e.mainAttr !== null && e.mainAttr.key !== mainAttr) {
       return false;
     }
@@ -368,8 +374,26 @@ const nextOnClick = () => {
         <Panel header="过滤" v-if="selectInputMethod === 'mona.json（实验）'" class="mt-4">
           <div class="mt-2 flex flex-row gap-4 items-center">
             <FloatLabel class="flex-3">
-              <Select optionLabel="name" class="w-full" disabled />
-              <label for="over_label">套装 TODO</label>
+              <Select optionLabel="name" class="w-full" :options="setNameOptions" v-model="filterEquipmentRef.setName">
+                <template #value="slotProps">
+                  <div v-if="slotProps.value" class="flex items-center">
+                    <img :src="slotProps.value.img" class="mr-2 flag w-6" />
+                    <div>{{ slotProps.value.name }}</div>
+                  </div>
+                  <div v-else class="flex items-center">
+                    <img class="mr-2 flag w-6" />
+                    <div>全部</div>
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div class="flex items-center">
+                    <img :src="slotProps.option.img" class="mr-2 flag w-8" />
+                    <div>{{ slotProps.option.name }}</div>
+                  </div>
+                </template>
+              </Select>
+
+              <label for="over_label">套装</label>
             </FloatLabel>
             <FloatLabel class="flex-2">
               <Select optionLabel="name" class="w-full" :options="mainAttrOptions"

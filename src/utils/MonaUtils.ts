@@ -1,5 +1,5 @@
 import type { AttrEnum, AttrPair, Equipment, PositionEnum } from "./Artifact";
-
+import MonaData from "./MonaData";
 
 export interface MonaEquipment {
 	setName: string;                  // 套装名称
@@ -57,11 +57,29 @@ function convertPositionToEnum(position: string): PositionEnum {
 	return index as PositionEnum;
 }
 
+function convertSetNameToChs(setName: string): string {
+	const map = Object.entries(MonaData);
+	const res = map.find(([key, _]) => key === setName);
+	if (res) {
+		return res[1].nameLocale;
+	} else {
+		return setName;
+	}
+}
+
+export function getSetNameChsDisplay(): { name: string, img: string }[] {
+	const map = Object.entries(MonaData);
+	const res = map.map(([_, value]) => {
+		return {name: value.nameLocale, img: value.head.url };
+	});
+	return res;
+}
+
 
 export function convertMonaToEquipment(mona: any): Equipment {
-	const { position, mainTag, normalTags, level } = mona;
+	const { setName, position, mainTag, normalTags, level } = mona;
 	return {
-		set: null,
+		setName: convertSetNameToChs(setName),
 		position: convertPositionToEnum(position),
 		level,
 		mainAttr: convertTagToAttr(mainTag),
