@@ -17,10 +17,10 @@ interface MonaEquipmentAttrs {
 }
 
 const MonaAttrName = [
-	"lifeStatic",
-	"lifePercentage",
 	"attackStatic",
 	"attackPercentage",
+	"lifeStatic",
+	"lifePercentage",
 	"defendStatic",
 	"defendPercentage",
 	"critical",
